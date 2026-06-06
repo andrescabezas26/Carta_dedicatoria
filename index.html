@@ -184,6 +184,12 @@
         0 0 10px rgba(244,194,194,0.28),
         0 0 24px rgba(185,215,255,0.22);
       mix-blend-mode: screen;
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+
+    #moon-secret.hidden {
+      opacity: 0;
+      transform: translateX(-50%) translateY(-8px);
     }
 
     /* ─── SCROLL CONTAINER ──────────────────────── */
@@ -1125,7 +1131,13 @@ function initCursor() {
 function initBackgroundAudio() {
   const audio = document.getElementById('bg-audio');
   if (!audio) return;
+  const moonSecret = document.getElementById('moon-secret');
   const TARGET_VOLUME = 0.85;
+
+  function hideMoonSecret() {
+    if (!moonSecret) return;
+    moonSecret.classList.add('hidden');
+  }
 
   function fadeInVolume() {
     audio.muted = false;
@@ -1156,12 +1168,14 @@ function initBackgroundAudio() {
   audio.play().then(() => {
     // autoplay (muted) succeeded — attempt to unmute and fade in
     try { audio.muted = false; } catch (e) {}
+    hideMoonSecret();
     fadeInVolume();
   }).catch(() => {
     // blocked: do NOT show any overlay. Resume on first user interaction silently.
     function resume() {
       try { audio.muted = false; } catch (e) {}
       audio.play().then(() => {
+        hideMoonSecret();
         fadeInVolume();
       }).catch(() => {
         // still blocked — nothing else to show
