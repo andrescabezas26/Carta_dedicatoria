@@ -124,7 +124,7 @@
       position: fixed;
       top: 50%;
       left: 50%;
-      transform: translate(-50%, -54%);
+      transform: translate(-50%, -50%);
       z-index: 3;
       pointer-events: none;
       transition: opacity 0.05s, transform 0.05s;
@@ -144,12 +144,13 @@
       display: block;
       position: relative;
       z-index: 1;
+      overflow: visible;
     }
 
     /* ─── MOON PHASE LABEL ──────────────────────── */
     #phase-label {
       position: fixed;
-      top: calc(50% + 160px);
+      top: calc(50% + 150px);
       left: 50%;
       transform: translateX(-50%);
       z-index: 4;
@@ -225,7 +226,7 @@
     }
 
     #section-night .poem-block {
-      margin-top: 56vh; /* sits below moon */
+      margin-top: 58vh; /* sits below moon */
     }
 
     /* ─── SECTION 2: TRANSITION ─────────────────── */
@@ -396,7 +397,7 @@
     /* ─── RESPONSIVE ────────────────────────────── */
     @media (max-width: 600px) {
       #section-night .poem-block { margin-top: 62vh; }
-      #phase-label { top: calc(50% + 110px); }
+      #phase-label { top: calc(50% + 120px); }
     }
 
     /* ─── SPACER FOR SCROLL LENGTH ──────────────── */
@@ -743,13 +744,14 @@ function drawMoon(canvas, phase) {
 
   ctx.clearRect(0, 0, S, S);
 
-  // ── 1. Multi-layer atmospheric halo
+  // ── 1. Multi-layer atmospheric halo (fades well before canvas edge)
   [
-    { mult: 2.4,  a: 0.018 },
-    { mult: 1.85, a: 0.032 },
-    { mult: 1.50, a: 0.048 },
-    { mult: 1.25, a: 0.065 },
-    { mult: 1.12, a: 0.085 },
+    { mult: 2.8,  a: 0.010 },
+    { mult: 2.2,  a: 0.018 },
+    { mult: 1.75, a: 0.030 },
+    { mult: 1.45, a: 0.048 },
+    { mult: 1.22, a: 0.068 },
+    { mult: 1.10, a: 0.085 },
   ].forEach(({ mult, a }) => {
     const rh = r * mult;
     const g = ctx.createRadialGradient(cx, cy, r * 0.88, cx, cy, rh);
@@ -828,83 +830,59 @@ function drawMoon(canvas, phase) {
     ctx.restore();
   });
 
-  // ── 5. Phase shadow with soft terminator
+  // ── 5. Phase shadow — correct closed path for shadow region
   var ill    = phase.illumination;
   var waning = !phase.waxing;
 
   if (ill <= 0.005) {
     ctx.save();
-    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
-    ctx.fillStyle = 'rgba(4,8,26,0.96)'; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.clip();
+    ctx.fillStyle = 'rgba(4,8,26,0.96)';
+    ctx.fillRect(0, 0, S, S);
     ctx.restore();
   } else if (ill < 0.995) {
-    var litFrac  = ill;
-    var txWaning = cx + (2*litFrac - 1) * r;
-    var txWaxing = cx - (2*litFrac - 1) * r;
-    var tx = waning ? txWaning : txWaxing;
+    var litFrac = ill;
+    var tx    = waning ? cx + (2*litFrac - 1)*r : cx - (2*litFrac - 1)*r;
     var termR = Math.abs(2*litFrac - 1) * r;
 
-    var off = document.createElement('canvas');
-    off.width = physSize; off.height = physSize;
-    var oc = off.getContext('2d');
-    oc.scale(dpr, dpr);
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.clip();
 
-    // Slightly enlarge the clip to avoid a 1-pixel seam when resampling
-    oc.beginPath(); oc.arc(cx, cy, r + 1, 0, Math.PI*2); oc.clip();
+    ctx.beginPath();
 
-    oc.save();
     if (waning) {
-      oc.beginPath();
-      oc.moveTo(cx, cy - r);
-      oc.arc(cx, cy, r, -Math.PI/2, Math.PI/2, false);
-      if (termR < 0.5) {
-        oc.lineTo(cx, cy - r);
+      if (litFrac >= 0.5) {
+        // Waning gibbous: shadow on the right
+        // Trace: right arc of moon (top→bottom clockwise) then terminator ellipse (bottom→top CCW)
+        ctx.arc(cx, cy, r, -Math.PI/2, Math.PI/2, false);         // right half, CW: top→bottom
+        ctx.ellipse(tx, cy, termR, r, 0, Math.PI/2, -Math.PI/2, true); // ellipse: bottom→top CCW
       } else {
-        oc.ellipse(tx, cy, termR, r, 0, Math.PI/2, -Math.PI/2, litFrac > 0.5);
+        // Waning crescent: shadow is almost all of the disc
+        // Trace: full moon disc CW, then lit ellipse CCW (hole)
+        ctx.arc(cx, cy, r, -Math.PI/2, Math.PI/2, false);
+        ctx.arc(cx, cy, r, Math.PI/2, -Math.PI/2, false);          // complete moon circle
+        // Then lit ellipse as a hole going the other way
+        ctx.moveTo(tx + termR, cy);
+        ctx.ellipse(tx, cy, termR, r, 0, 0, Math.PI*2, true);      // CCW = hole
       }
-      oc.closePath();
     } else {
-      oc.beginPath();
-      oc.moveTo(cx, cy - r);
-      oc.arc(cx, cy, r, -Math.PI/2, Math.PI/2, true);
-      if (termR < 0.5) {
-        oc.lineTo(cx, cy - r);
+      if (litFrac >= 0.5) {
+        // Waxing gibbous: shadow on the left
+        ctx.arc(cx, cy, r, Math.PI/2, -Math.PI/2, false);          // left half CW: bottom→top
+        ctx.ellipse(tx, cy, termR, r, 0, -Math.PI/2, Math.PI/2, true); // ellipse: top→bottom CCW
       } else {
-        oc.ellipse(tx, cy, termR, r, 0, Math.PI/2, -Math.PI/2, litFrac < 0.5);
+        // Waxing crescent: shadow is almost all of the disc
+        ctx.arc(cx, cy, r, 0, Math.PI*2, false);
+        ctx.moveTo(tx + termR, cy);
+        ctx.ellipse(tx, cy, termR, r, 0, 0, Math.PI*2, true);
       }
-      oc.closePath();
     }
-    oc.fillStyle = 'rgba(4,8,26,0.95)';
-    oc.fill();
-    oc.restore();
 
-    // Soft terminator blur band
-    var bw = r * 0.055;
-    var tg = oc.createLinearGradient(tx - bw*2, 0, tx + bw*2, 0);
-    tg.addColorStop(0,    'rgba(4,8,26,0.0)');
-    tg.addColorStop(0.35, 'rgba(4,8,26,0.42)');
-    tg.addColorStop(0.5,  'rgba(4,8,26,0.68)');
-    tg.addColorStop(0.65, 'rgba(4,8,26,0.42)');
-    tg.addColorStop(1,    'rgba(4,8,26,0.0)');
-    oc.save();
-    oc.beginPath(); oc.arc(cx, cy, r, 0, Math.PI*2); oc.clip();
-    oc.fillStyle = tg;
-    oc.fillRect(tx - bw*3, cy - r - 2, bw*6, r*2 + 4);
-    oc.restore();
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(4,8,26,0.95)';
+    ctx.fill();
 
-    // Penumbra shimmer
-    var pg = oc.createLinearGradient(tx - bw*1.5, 0, tx + bw*1.5, 0);
-    pg.addColorStop(0,   'rgba(170,205,255,0)');
-    pg.addColorStop(0.5, 'rgba(170,205,255,0.09)');
-    pg.addColorStop(1,   'rgba(170,205,255,0)');
-    oc.save();
-    oc.beginPath(); oc.arc(cx, cy, r, 0, Math.PI*2); oc.clip();
-    oc.fillStyle = pg;
-    oc.fillRect(tx - bw*1.5, cy - r - 2, bw*3, r*2 + 4);
-    oc.restore();
-
-    // Draw the offscreen canvas with a 1px horizontal overlap to prevent seam artifacts
-    ctx.drawImage(off, 0, 0, physSize, physSize, -1, 0, S + 2, S);
+    ctx.restore();
   }
 
   // ── 6. Limb darkening
@@ -938,7 +916,7 @@ function drawMoon(canvas, phase) {
 // ════════════════════════════════════════════════
 function resizeMoon() {
   var canvas = document.getElementById('moon-canvas');
-  var logicalSize = window.innerWidth < 600 ? 220 : 300;
+  var logicalSize = window.innerWidth < 600 ? 280 : 380;
   canvas.setAttribute('data-size', logicalSize);
   var dpr = Math.min(window.devicePixelRatio || 1, 3);
   canvas.width  = logicalSize * dpr;
@@ -1062,7 +1040,7 @@ function initScroll() {
     const moonOpacity = 1 - easeInOut(t);
     const moonScale   = 1 - easeInOut(t) * 0.35;
     moonWrap.style.opacity   = moonOpacity;
-    moonWrap.style.transform = `translate(-50%, -54%) scale(${moonScale})`;
+    moonWrap.style.transform = `translate(-50%, -50%) scale(${moonScale})`;
     phaseLabel.style.opacity = moonOpacity * 0.8;
 
     bgNight.style.opacity = 1 - easeInOut(t) * 0.85;
