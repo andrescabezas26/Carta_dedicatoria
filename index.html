@@ -1,0 +1,1199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- ✏️ EDITABLE: Change the page title here -->
+  <title>Para ti</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Petit+Formal+Script&family=EB+Garamond:ital,wght@0,400;1,400&display=swap');
+
+    :root {
+      --night: #04081a;
+      --wine: #12040a;
+      --rose-deep: #8B1A2F;
+      --rose-mid: #c0415a;
+      --blush: #F4C2C2;
+      --gold: #c9a96e;
+      --moon-glow: rgba(230, 240, 255, 0.18);
+      --star-color: rgba(200, 215, 255, 0.7);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--night);
+      color: #e8ddd5;
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* ─── CUSTOM CURSOR ─────────────────────────── */
+    #cursor {
+      position: fixed;
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      background: rgba(244,194,194,0.9);
+      box-shadow: 0 0 14px 6px rgba(244,194,194,0.4);
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      transition: transform 0.08s ease, opacity 0.3s;
+      z-index: 9999;
+      mix-blend-mode: screen;
+    }
+
+    /* ─── STARFIELD CANVAS ──────────────────────── */
+    #stars-canvas {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      transition: opacity 1.2s ease;
+    }
+
+    /* ─── PETAL CONTAINER ───────────────────────── */
+    #petals {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 2;
+      overflow: hidden;
+      opacity: 0;
+      transition: opacity 1.5s ease;
+    }
+
+    .petal {
+      position: absolute;
+      top: -60px;
+      border-radius: 150% 0 150% 0;
+      opacity: 0;
+      animation: petalFall linear infinite;
+    }
+
+    @keyframes petalFall {
+      0%   { transform: translateY(0) rotate(0deg) scale(1);   opacity: 0; }
+      5%   { opacity: 0.7; }
+      90%  { opacity: 0.5; }
+      100% { transform: translateY(110vh) rotate(720deg) scale(0.6); opacity: 0; }
+    }
+
+    /* ─── BACKGROUND LAYER ──────────────────────── */
+    #bg-night {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background: radial-gradient(ellipse at 50% 0%, #0d1b3e 0%, #04081a 60%);
+      transition: opacity 0.05s;
+    }
+    #bg-rose {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      opacity: 0;
+      background:
+        radial-gradient(ellipse at 30% 80%, #3d0016 0%, transparent 60%),
+        radial-gradient(ellipse at 70% 20%, #1a0510 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, #12040a 0%, #06010a 100%);
+      transition: opacity 0.05s;
+    }
+
+    /* ─── GRAIN OVERLAY ─────────────────────────── */
+    #grain {
+      position: fixed;
+      inset: -200%;
+      z-index: 1;
+      width: 400%; height: 400%;
+      pointer-events: none;
+      opacity: 0.035;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      animation: grainShift 0.5s steps(2) infinite;
+    }
+    @keyframes grainShift {
+      0%   { transform: translate(0, 0); }
+      25%  { transform: translate(-2%, -1%); }
+      50%  { transform: translate(1%, 2%); }
+      75%  { transform: translate(2%, -2%); }
+      100% { transform: translate(-1%, 1%); }
+    }
+
+    /* ─── MOON WRAPPER ──────────────────────────── */
+    #moon-wrap {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -54%);
+      z-index: 3;
+      pointer-events: none;
+      transition: opacity 0.05s, transform 0.05s;
+    }
+
+    /* ─── MOON ATMOSPHERE GLOW ──────────────────── */
+    #moon-glow-halo {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    /* ─── MOON CANVAS ───────────────────────────── */
+    #moon-canvas {
+      display: block;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ─── MOON PHASE LABEL ──────────────────────── */
+    #phase-label {
+      position: fixed;
+      top: calc(50% + 160px);
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 4;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(0.65rem, 1.5vw, 0.8rem);
+      font-weight: 300;
+      letter-spacing: 0.35em;
+      text-transform: uppercase;
+      color: rgba(200,215,255,0.45);
+      pointer-events: none;
+      opacity: 1;
+      transition: opacity 0.8s ease;
+      white-space: nowrap;
+    }
+
+    /* ─── SCROLL CONTAINER ──────────────────────── */
+    #scroll-container {
+      position: relative;
+      z-index: 5;
+    }
+
+    /* ─── SECTIONS ──────────────────────────────── */
+    .section {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(3rem, 8vw, 7rem) clamp(1.5rem, 6vw, 4rem);
+      position: relative;
+    }
+
+    /* ─── POEM BLOCKS ───────────────────────────── */
+    .poem-block {
+      max-width: 560px;
+      text-align: center;
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 1.2s cubic-bezier(0.22,1,0.36,1), transform 1.2s cubic-bezier(0.22,1,0.36,1);
+      will-change: opacity, transform;
+    }
+    .poem-block.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .verse {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(1.15rem, 3.2vw, 1.65rem);
+      font-style: italic;
+      font-weight: 300;
+      line-height: 1.85;
+      color: rgba(232,221,213,0.92);
+      letter-spacing: 0.01em;
+    }
+
+    .verse em {
+      color: var(--blush);
+      font-style: normal;
+    }
+
+    .divider {
+      margin: 1.8rem auto;
+      width: 40px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      opacity: 0.6;
+    }
+
+    /* ─── SECTION 1: NIGHT ──────────────────────── */
+    #section-night {
+      padding-top: 0;
+    }
+
+    #section-night .poem-block {
+      margin-top: 56vh; /* sits below moon */
+    }
+
+    /* ─── SECTION 2: TRANSITION ─────────────────── */
+    #section-transition {
+      padding-top: 4rem;
+    }
+
+    /* ─── SECTION 3: ROSES ──────────────────────── */
+    #section-roses {
+      padding-bottom: 6rem;
+    }
+
+    .dedication-card {
+      position: relative;
+      max-width: 620px;
+      padding: clamp(2rem, 5vw, 3.5rem) clamp(2rem, 6vw, 4rem);
+      border: 1px solid rgba(139,26,47,0.35);
+      background:
+        linear-gradient(135deg, rgba(139,26,47,0.08) 0%, rgba(18,4,10,0.6) 100%);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-radius: 2px;
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 1.4s cubic-bezier(0.22,1,0.36,1) 0.2s,
+                  transform 1.4s cubic-bezier(0.22,1,0.36,1) 0.2s;
+    }
+    .dedication-card.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .dedication-card::before {
+      content: '';
+      position: absolute;
+      inset: 6px;
+      border: 1px solid rgba(201,169,110,0.12);
+      pointer-events: none;
+      border-radius: 1px;
+    }
+
+    /* corner roses */
+    .corner-rose {
+      position: absolute;
+      font-size: 1.4rem;
+      opacity: 0.5;
+      line-height: 1;
+    }
+    .corner-rose.tl { top: 10px; left: 14px; transform: rotate(-20deg); }
+    .corner-rose.tr { top: 10px; right: 14px; transform: rotate(20deg) scaleX(-1); }
+    .corner-rose.bl { bottom: 10px; left: 14px; transform: rotate(20deg); }
+    .corner-rose.br { bottom: 10px; right: 14px; transform: rotate(-20deg) scaleX(-1); }
+
+    .dedication-title {
+      font-family: 'Petit Formal Script', cursive;
+      font-size: clamp(1.3rem, 3.5vw, 2rem);
+      color: var(--blush);
+      text-align: center;
+      margin-bottom: 1.4rem;
+      letter-spacing: 0.02em;
+      text-shadow: 0 0 30px rgba(244,194,194,0.3);
+    }
+
+    .dedication-body {
+      font-family: 'EB Garamond', serif;
+      font-size: clamp(1rem, 2.5vw, 1.2rem);
+      line-height: 2;
+      color: rgba(232,221,213,0.85);
+      text-align: center;
+      font-style: italic;
+    }
+
+    .dedication-signoff {
+      margin-top: 2rem;
+      text-align: right;
+      font-family: 'Petit Formal Script', cursive;
+      font-size: clamp(1rem, 2.5vw, 1.3rem);
+      color: var(--gold);
+      opacity: 0.9;
+    }
+
+    /* ─── SVG ROSE DECORATION ───────────────────── */
+    .rose-deco {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 2s ease 0.4s;
+    }
+    .rose-deco.visible { opacity: 1; }
+
+    /* main side roses (card flanks) */
+    .rose-left  { left: clamp(-100px, -6vw, -20px); top: 50%; transform: translateY(-50%) scaleX(-1); }
+    .rose-right { right: clamp(-100px, -6vw, -20px); top: 50%; transform: translateY(-50%); }
+
+    /* top corner roses */
+    .rose-top-left  {
+      top: 2rem; left: 2rem;
+      transform: rotate(-30deg) scaleX(-1);
+      transition-delay: 0.15s;
+    }
+    .rose-top-right {
+      top: 2rem; right: 2rem;
+      transform: rotate(30deg);
+      transition-delay: 0.25s;
+    }
+    /* bottom corner roses */
+    .rose-bot-left  {
+      bottom: 2rem; left: 2rem;
+      transform: rotate(20deg) scaleX(-1);
+      transition-delay: 0.35s;
+    }
+    .rose-bot-right {
+      bottom: 2rem; right: 2rem;
+      transform: rotate(-20deg);
+      transition-delay: 0.45s;
+    }
+    /* mid-wall accent */
+    .rose-mid-left {
+      left: 4vw; top: 20%;
+      transform: rotate(-55deg) scaleX(-1) scale(0.7);
+      transition-delay: 0.5s;
+    }
+    .rose-mid-right {
+      right: 4vw; bottom: 20%;
+      transform: rotate(55deg) scale(0.7);
+      transition-delay: 0.6s;
+    }
+
+    @media (max-width: 600px) {
+      .rose-left, .rose-right,
+      .rose-mid-left, .rose-mid-right { display: none; }
+      .rose-top-left, .rose-top-right,
+      .rose-bot-left, .rose-bot-right { transform: scale(0.6); }
+    }
+
+    /* ─── SCROLL HINT ───────────────────────────── */
+    #scroll-hint {
+      position: fixed;
+      bottom: 2.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      opacity: 1;
+      transition: opacity 0.8s ease;
+      pointer-events: none;
+    }
+    #scroll-hint span {
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: rgba(200,215,255,0.4);
+    }
+    .scroll-arrow {
+      width: 18px; height: 18px;
+      border-right: 1px solid rgba(200,215,255,0.35);
+      border-bottom: 1px solid rgba(200,215,255,0.35);
+      transform: rotate(45deg);
+      animation: arrowBounce 2s ease-in-out infinite;
+    }
+    @keyframes arrowBounce {
+      0%, 100% { transform: rotate(45deg) translateY(0); opacity: 0.5; }
+      50%       { transform: rotate(45deg) translateY(5px); opacity: 1; }
+    }
+
+    /* ─── RESPONSIVE ────────────────────────────── */
+    @media (max-width: 600px) {
+      #section-night .poem-block { margin-top: 62vh; }
+      #phase-label { top: calc(50% + 110px); }
+    }
+
+    /* ─── SPACER FOR SCROLL LENGTH ──────────────── */
+    #end-spacer { height: 8rem; }
+  </style>
+</head>
+<body>
+
+<!-- Custom cursor -->
+<div id="cursor"></div>
+
+<!-- Background layers -->
+<div id="bg-night"></div>
+<div id="bg-rose"></div>
+<div id="grain"></div>
+
+<!-- Stars -->
+<canvas id="stars-canvas"></canvas>
+
+<!-- Moon -->
+<div id="moon-wrap">
+  <canvas id="moon-canvas"></canvas>
+</div>
+<div id="phase-label"></div>
+
+<!-- Petals -->
+<div id="petals"></div>
+
+<!-- Audio (reproducción en segundo plano, sin reproductor visible) -->
+<!-- ✏️ EDITABLE: change src to your mp3 filename if you rename it -->
+  <audio id="bg-audio" loop preload="auto" autoplay>
+  <source src="Destino%20o%20casualidad.mp3" type="audio/mpeg">
+</audio>
+
+<!-- Scroll hint -->
+<div id="scroll-hint">
+  <span>desliza</span>
+  <div class="scroll-arrow"></div>
+</div>
+
+<!-- ─────────────────────────────────────────────── -->
+<!--        SCROLL CONTENT                          -->
+<!-- ─────────────────────────────────────────────── -->
+<div id="scroll-container">
+
+  <!-- ══ SECTION 1: LUNA ══ -->
+  <section class="section" id="section-night">
+    <div class="poem-block" id="verse-1">
+      <!-- ✏️ EDITABLE: Verse 1 — appears over the moon -->
+      <p class="verse">
+        En la quietud de la noche,<br>
+        cuando la luna te nombra,<br>
+        pienso en ti como se piensa<br>
+        en lo que <em>nunca</em> se olvida.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══ SECTION 2: TRANSICIÓN ══ -->
+  <section class="section" id="section-transition">
+    <div class="poem-block" id="verse-2">
+      <!-- ✏️ EDITABLE: Verse 2 — transition section -->
+      <p class="verse">
+        Eres el instante exacto<br>
+        entre la luna y la aurora,<br>
+        el silencio que lo dice todo,<br>
+        la distancia que <em>enamora</em>.
+      </p>
+    </div>
+  </section>
+
+  <!-- ══ SECTION 3: ROSAS ══ -->
+  <section class="section" id="section-roses">
+
+    <!-- SVG defs shared rose symbol -->
+    <svg width="0" height="0" style="position:absolute;overflow:hidden">
+      <defs>
+        <radialGradient id="rg-main" cx="45%" cy="35%" r="65%">
+          <stop offset="0%" stop-color="#ff8fa0" stop-opacity="0.25"/>
+          <stop offset="100%" stop-color="#8B1A2F" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="rg-sm" cx="45%" cy="35%" r="65%">
+          <stop offset="0%" stop-color="#ff8fa0" stop-opacity="0.2"/>
+          <stop offset="100%" stop-color="#8B1A2F" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+    </svg>
+
+    <!-- Main left rose (large) -->
+    <div class="rose-deco rose-left" id="rose-left">
+      <svg width="140" height="230" viewBox="0 0 140 230" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M70 230 Q67 185 64 160 Q61 135 70 108" stroke="#3d1420" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+        <path d="M65 178 Q44 166 38 148 Q56 151 65 166" fill="#2a0f17" stroke="#3d1420" stroke-width="1"/>
+        <path d="M67 152 Q84 136 92 120 Q75 125 70 142" fill="#2a0f17" stroke="#3d1420" stroke-width="1"/>
+        <!-- guard petals -->
+        <ellipse cx="70" cy="78" rx="30" ry="38" fill="#5a0d22" opacity="0.88"/>
+        <ellipse cx="44" cy="92" rx="22" ry="28" fill="#6b1128" transform="rotate(-28 44 92)" opacity="0.82"/>
+        <ellipse cx="96" cy="92" rx="22" ry="28" fill="#6b1128" transform="rotate(28 96 92)" opacity="0.82"/>
+        <ellipse cx="34" cy="74" rx="17" ry="24" fill="#52091e" transform="rotate(-50 34 74)" opacity="0.78"/>
+        <ellipse cx="106" cy="74" rx="17" ry="24" fill="#52091e" transform="rotate(50 106 74)" opacity="0.78"/>
+        <!-- mid petals -->
+        <ellipse cx="56" cy="74" rx="20" ry="27" fill="#8B1A2F" transform="rotate(-14 56 74)"/>
+        <ellipse cx="84" cy="74" rx="20" ry="27" fill="#8B1A2F" transform="rotate(14 84 74)"/>
+        <ellipse cx="70" cy="62" rx="18" ry="27" fill="#9e2238"/>
+        <!-- inner petals -->
+        <ellipse cx="58" cy="66" rx="13" ry="18" fill="#b02d42" transform="rotate(-10 58 66)"/>
+        <ellipse cx="82" cy="66" rx="13" ry="18" fill="#b02d42" transform="rotate(10 82 66)"/>
+        <ellipse cx="70" cy="58" rx="12" ry="17" fill="#c03c50"/>
+        <!-- core -->
+        <ellipse cx="70" cy="59" rx="9" ry="12" fill="#d45066"/>
+        <ellipse cx="70" cy="56" rx="6" ry="8"  fill="#e06070"/>
+        <ellipse cx="70" cy="54" rx="3.5" ry="5" fill="#f08090"/>
+        <!-- glow overlay -->
+        <ellipse cx="70" cy="80" rx="32" ry="40" fill="url(#rg-main)" opacity="1"/>
+      </svg>
+    </div>
+
+    <!-- Main right rose (large) -->
+    <div class="rose-deco rose-right" id="rose-right">
+      <svg width="140" height="230" viewBox="0 0 140 230" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M70 230 Q67 185 64 160 Q61 135 70 108" stroke="#3d1420" stroke-width="2.8" fill="none" stroke-linecap="round"/>
+        <path d="M65 178 Q44 166 38 148 Q56 151 65 166" fill="#2a0f17" stroke="#3d1420" stroke-width="1"/>
+        <path d="M67 152 Q84 136 92 120 Q75 125 70 142" fill="#2a0f17" stroke="#3d1420" stroke-width="1"/>
+        <ellipse cx="70" cy="78" rx="30" ry="38" fill="#5a0d22" opacity="0.88"/>
+        <ellipse cx="44" cy="92" rx="22" ry="28" fill="#6b1128" transform="rotate(-28 44 92)" opacity="0.82"/>
+        <ellipse cx="96" cy="92" rx="22" ry="28" fill="#6b1128" transform="rotate(28 96 92)" opacity="0.82"/>
+        <ellipse cx="34" cy="74" rx="17" ry="24" fill="#52091e" transform="rotate(-50 34 74)" opacity="0.78"/>
+        <ellipse cx="106" cy="74" rx="17" ry="24" fill="#52091e" transform="rotate(50 106 74)" opacity="0.78"/>
+        <ellipse cx="56" cy="74" rx="20" ry="27" fill="#8B1A2F" transform="rotate(-14 56 74)"/>
+        <ellipse cx="84" cy="74" rx="20" ry="27" fill="#8B1A2F" transform="rotate(14 84 74)"/>
+        <ellipse cx="70" cy="62" rx="18" ry="27" fill="#9e2238"/>
+        <ellipse cx="58" cy="66" rx="13" ry="18" fill="#b02d42" transform="rotate(-10 58 66)"/>
+        <ellipse cx="82" cy="66" rx="13" ry="18" fill="#b02d42" transform="rotate(10 82 66)"/>
+        <ellipse cx="70" cy="58" rx="12" ry="17" fill="#c03c50"/>
+        <ellipse cx="70" cy="59" rx="9" ry="12" fill="#d45066"/>
+        <ellipse cx="70" cy="56" rx="6" ry="8"  fill="#e06070"/>
+        <ellipse cx="70" cy="54" rx="3.5" ry="5" fill="#f08090"/>
+        <ellipse cx="70" cy="80" rx="32" ry="40" fill="url(#rg-main)" opacity="1"/>
+      </svg>
+    </div>
+
+    <!-- Top-left corner rose (small) -->
+    <div class="rose-deco rose-top-left" id="rose-tl">
+      <svg width="80" height="130" viewBox="0 0 80 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M40 130 Q38 105 36 90 Q34 75 40 60" stroke="#3d1420" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M37 100 Q24 93 20 83 Q32 85 37 95" fill="#2a0f17"/>
+        <ellipse cx="40" cy="42" rx="18" ry="22" fill="#5a0d22" opacity="0.85"/>
+        <ellipse cx="24" cy="50" rx="13" ry="16" fill="#6b1128" transform="rotate(-25 24 50)" opacity="0.8"/>
+        <ellipse cx="56" cy="50" rx="13" ry="16" fill="#6b1128" transform="rotate(25 56 50)" opacity="0.8"/>
+        <ellipse cx="32" cy="41" rx="12" ry="16" fill="#8B1A2F" transform="rotate(-12 32 41)"/>
+        <ellipse cx="48" cy="41" rx="12" ry="16" fill="#8B1A2F" transform="rotate(12 48 41)"/>
+        <ellipse cx="40" cy="34" rx="10" ry="15" fill="#9e2238"/>
+        <ellipse cx="34" cy="37" rx="7" ry="10" fill="#b02d42" transform="rotate(-8 34 37)"/>
+        <ellipse cx="46" cy="37" rx="7" ry="10" fill="#b02d42" transform="rotate(8 46 37)"/>
+        <ellipse cx="40" cy="31" rx="6" ry="9"  fill="#c03c50"/>
+        <ellipse cx="40" cy="31" rx="4" ry="6"  fill="#d45066"/>
+        <ellipse cx="40" cy="44" rx="20" ry="24" fill="url(#rg-sm)" opacity="1"/>
+      </svg>
+    </div>
+
+    <!-- Top-right corner rose (small) -->
+    <div class="rose-deco rose-top-right" id="rose-tr">
+      <svg width="80" height="130" viewBox="0 0 80 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M40 130 Q38 105 36 90 Q34 75 40 60" stroke="#3d1420" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M37 100 Q24 93 20 83 Q32 85 37 95" fill="#2a0f17"/>
+        <ellipse cx="40" cy="42" rx="18" ry="22" fill="#5a0d22" opacity="0.85"/>
+        <ellipse cx="24" cy="50" rx="13" ry="16" fill="#6b1128" transform="rotate(-25 24 50)" opacity="0.8"/>
+        <ellipse cx="56" cy="50" rx="13" ry="16" fill="#6b1128" transform="rotate(25 56 50)" opacity="0.8"/>
+        <ellipse cx="32" cy="41" rx="12" ry="16" fill="#8B1A2F" transform="rotate(-12 32 41)"/>
+        <ellipse cx="48" cy="41" rx="12" ry="16" fill="#8B1A2F" transform="rotate(12 48 41)"/>
+        <ellipse cx="40" cy="34" rx="10" ry="15" fill="#9e2238"/>
+        <ellipse cx="34" cy="37" rx="7" ry="10" fill="#b02d42" transform="rotate(-8 34 37)"/>
+        <ellipse cx="46" cy="37" rx="7" ry="10" fill="#b02d42" transform="rotate(8 46 37)"/>
+        <ellipse cx="40" cy="31" rx="6" ry="9"  fill="#c03c50"/>
+        <ellipse cx="40" cy="31" rx="4" ry="6"  fill="#d45066"/>
+        <ellipse cx="40" cy="44" rx="20" ry="24" fill="url(#rg-sm)" opacity="1"/>
+      </svg>
+    </div>
+
+    <!-- Bottom-left corner rose (small) -->
+    <div class="rose-deco rose-bot-left" id="rose-bl">
+      <svg width="80" height="130" viewBox="0 0 80 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M40 130 Q38 105 36 90 Q34 75 40 60" stroke="#3d1420" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M37 100 Q24 93 20 83 Q32 85 37 95" fill="#2a0f17"/>
+        <ellipse cx="40" cy="42" rx="18" ry="22" fill="#600f25" opacity="0.85"/>
+        <ellipse cx="24" cy="50" rx="13" ry="16" fill="#7a1530" transform="rotate(-25 24 50)" opacity="0.8"/>
+        <ellipse cx="56" cy="50" rx="13" ry="16" fill="#7a1530" transform="rotate(25 56 50)" opacity="0.8"/>
+        <ellipse cx="32" cy="41" rx="12" ry="16" fill="#9c2038" transform="rotate(-12 32 41)"/>
+        <ellipse cx="48" cy="41" rx="12" ry="16" fill="#9c2038" transform="rotate(12 48 41)"/>
+        <ellipse cx="40" cy="34" rx="10" ry="15" fill="#b02d42"/>
+        <ellipse cx="34" cy="37" rx="7" ry="10" fill="#c03c50" transform="rotate(-8 34 37)"/>
+        <ellipse cx="46" cy="37" rx="7" ry="10" fill="#c03c50" transform="rotate(8 46 37)"/>
+        <ellipse cx="40" cy="31" rx="6" ry="9"  fill="#d45066"/>
+        <ellipse cx="40" cy="31" rx="4" ry="6"  fill="#e06070"/>
+        <ellipse cx="40" cy="44" rx="20" ry="24" fill="url(#rg-sm)" opacity="1"/>
+      </svg>
+    </div>
+
+    <!-- Bottom-right corner rose (small) -->
+    <div class="rose-deco rose-bot-right" id="rose-br">
+      <svg width="80" height="130" viewBox="0 0 80 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M40 130 Q38 105 36 90 Q34 75 40 60" stroke="#3d1420" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M37 100 Q24 93 20 83 Q32 85 37 95" fill="#2a0f17"/>
+        <ellipse cx="40" cy="42" rx="18" ry="22" fill="#600f25" opacity="0.85"/>
+        <ellipse cx="24" cy="50" rx="13" ry="16" fill="#7a1530" transform="rotate(-25 24 50)" opacity="0.8"/>
+        <ellipse cx="56" cy="50" rx="13" ry="16" fill="#7a1530" transform="rotate(25 56 50)" opacity="0.8"/>
+        <ellipse cx="32" cy="41" rx="12" ry="16" fill="#9c2038" transform="rotate(-12 32 41)"/>
+        <ellipse cx="48" cy="41" rx="12" ry="16" fill="#9c2038" transform="rotate(12 48 41)"/>
+        <ellipse cx="40" cy="34" rx="10" ry="15" fill="#b02d42"/>
+        <ellipse cx="34" cy="37" rx="7" ry="10" fill="#c03c50" transform="rotate(-8 34 37)"/>
+        <ellipse cx="46" cy="37" rx="7" ry="10" fill="#c03c50" transform="rotate(8 46 37)"/>
+        <ellipse cx="40" cy="31" rx="6" ry="9"  fill="#d45066"/>
+        <ellipse cx="40" cy="31" rx="4" ry="6"  fill="#e06070"/>
+        <ellipse cx="40" cy="44" rx="20" ry="24" fill="url(#rg-sm)" opacity="1"/>
+      </svg>
+    </div>
+
+    <!-- Mid-wall accent roses -->
+    <div class="rose-deco rose-mid-left" id="rose-ml">
+      <svg width="80" height="130" viewBox="0 0 80 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M40 130 Q38 105 36 90 Q34 75 40 60" stroke="#3d1420" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <ellipse cx="40" cy="42" rx="17" ry="21" fill="#4a0a1e" opacity="0.8"/>
+        <ellipse cx="25" cy="50" rx="12" ry="15" fill="#6b1128" transform="rotate(-22 25 50)" opacity="0.75"/>
+        <ellipse cx="55" cy="50" rx="12" ry="15" fill="#6b1128" transform="rotate(22 55 50)" opacity="0.75"/>
+        <ellipse cx="32" cy="40" rx="11" ry="15" fill="#8B1A2F" transform="rotate(-12 32 40)"/>
+        <ellipse cx="48" cy="40" rx="11" ry="15" fill="#8B1A2F" transform="rotate(12 48 40)"/>
+        <ellipse cx="40" cy="33" rx="9" ry="14"  fill="#9e2238"/>
+        <ellipse cx="40" cy="33" rx="5" ry="8"   fill="#c03c50"/>
+        <ellipse cx="40" cy="30" rx="3" ry="5"   fill="#d45066"/>
+        <ellipse cx="40" cy="44" rx="19" ry="23" fill="url(#rg-sm)" opacity="0.9"/>
+      </svg>
+    </div>
+
+    <div class="rose-deco rose-mid-right" id="rose-mr">
+      <svg width="80" height="130" viewBox="0 0 80 130" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M40 130 Q38 105 36 90 Q34 75 40 60" stroke="#3d1420" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <ellipse cx="40" cy="42" rx="17" ry="21" fill="#4a0a1e" opacity="0.8"/>
+        <ellipse cx="25" cy="50" rx="12" ry="15" fill="#6b1128" transform="rotate(-22 25 50)" opacity="0.75"/>
+        <ellipse cx="55" cy="50" rx="12" ry="15" fill="#6b1128" transform="rotate(22 55 50)" opacity="0.75"/>
+        <ellipse cx="32" cy="40" rx="11" ry="15" fill="#8B1A2F" transform="rotate(-12 32 40)"/>
+        <ellipse cx="48" cy="40" rx="11" ry="15" fill="#8B1A2F" transform="rotate(12 48 40)"/>
+        <ellipse cx="40" cy="33" rx="9" ry="14"  fill="#9e2238"/>
+        <ellipse cx="40" cy="33" rx="5" ry="8"   fill="#c03c50"/>
+        <ellipse cx="40" cy="30" rx="3" ry="5"   fill="#d45066"/>
+        <ellipse cx="40" cy="44" rx="19" ry="23" fill="url(#rg-sm)" opacity="0.9"/>
+      </svg>
+    </div>
+
+    <!-- Verse 3 -->
+    <div class="poem-block" id="verse-3" style="margin-bottom: 3rem;">
+      <!-- ✏️ EDITABLE: Verse 3 — roses section -->
+      <p class="verse">
+        Y si las rosas pudieran hablar,<br>
+        dirían lo que yo no alcanzo:<br>
+        que en cada pétalo que cae<br>
+        hay un pedazo de <em>este abrazo</em>.
+      </p>
+    </div>
+
+    <!-- Dedication card -->
+    <div class="dedication-card" id="dedication-card">
+      <span class="corner-rose tl">✿</span>
+      <span class="corner-rose tr">✿</span>
+      <span class="corner-rose bl">✿</span>
+      <span class="corner-rose br">✿</span>
+
+      <!-- ✏️ EDITABLE: Card title -->
+      <div class="dedication-title">Para ti, Camila</div>
+
+      <div class="divider"></div>
+
+      <!-- ✏️ EDITABLE: Main dedication message -->
+      <p class="dedication-body">
+        Hay personas que llegan sin avisar<br>
+        y lo cambian todo sin proponérselo.<br>
+        Tú eres de esas.<br><br>
+        Gracias por existir en el mismo tiempo que yo,<br>
+        por compartir la misma luna,<br>
+        por hacerle sentido a las noches<br>
+        que antes no lo tenían.
+      </p>
+
+      <div class="divider"></div>
+
+      <!-- ✏️ EDITABLE: Sign-off name -->
+      <div class="dedication-signoff">Con todo, — Andrés</div>
+    </div>
+
+  </section>
+
+  <div id="end-spacer"></div>
+</div>
+
+<!-- ─────────────────────────────────────────────── -->
+<script>
+// ════════════════════════════════════════════════
+//  LUNAR PHASE CALCULATION
+// ════════════════════════════════════════════════
+function getLunarPhase(date) {
+  // Known new moon reference: Jan 6, 2000 18:14 UTC
+  const knownNewMoon = new Date(Date.UTC(2000, 0, 6, 18, 14, 0));
+  const synodicMonth = 29.53058867;
+  const elapsed = (date - knownNewMoon) / (1000 * 60 * 60 * 24);
+  let age = ((elapsed % synodicMonth) + synodicMonth) % synodicMonth;
+  const illumination = 0.5 * (1 - Math.cos(2 * Math.PI * age / synodicMonth));
+
+  let phaseName;
+  if      (age < 1.85)  phaseName = "Luna nueva";
+  else if (age < 7.38)  phaseName = "Creciente";
+  else if (age < 9.22)  phaseName = "Cuarto creciente";
+  else if (age < 14.77) phaseName = "Gibosa creciente";
+  else if (age < 16.61) phaseName = "Luna llena";
+  else if (age < 22.15) phaseName = "Gibosa menguante";
+  else if (age < 23.99) phaseName = "Cuarto menguante";
+  else if (age < 29.53) phaseName = "Menguante";
+  else                  phaseName = "Luna nueva";
+
+  // waxing = age < 14.77
+  return { age, illumination, phaseName, waxing: age < 14.77 };
+}
+
+// ════════════════════════════════════════════════
+//  DRAW MOON — high quality, DPR-aware, soft terminator
+// ════════════════════════════════════════════════
+function drawMoon(canvas, phase) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  const logicalSize = parseInt(canvas.getAttribute('data-size') || '300');
+  const physSize = logicalSize * dpr;
+
+  if (canvas.width !== physSize || canvas.height !== physSize) {
+    canvas.width  = physSize;
+    canvas.height = physSize;
+    canvas.style.width  = logicalSize + 'px';
+    canvas.style.height = logicalSize + 'px';
+  }
+
+  const ctx = canvas.getContext('2d');
+  ctx.save();
+  ctx.scale(dpr, dpr);
+
+  const S  = logicalSize;
+  const cx = S / 2, cy = S / 2;
+  const r  = S * 0.39;
+
+  ctx.clearRect(0, 0, S, S);
+
+  // ── 1. Multi-layer atmospheric halo
+  [
+    { mult: 2.4,  a: 0.018 },
+    { mult: 1.85, a: 0.032 },
+    { mult: 1.50, a: 0.048 },
+    { mult: 1.25, a: 0.065 },
+    { mult: 1.12, a: 0.085 },
+  ].forEach(({ mult, a }) => {
+    const rh = r * mult;
+    const g = ctx.createRadialGradient(cx, cy, r * 0.88, cx, cy, rh);
+    g.addColorStop(0,    'rgba(185,215,255,' + a + ')');
+    g.addColorStop(0.45, 'rgba(165,198,255,' + (a * 0.55) + ')');
+    g.addColorStop(1,    'rgba(140,180,255,0)');
+    ctx.beginPath();
+    ctx.arc(cx, cy, rh, 0, Math.PI * 2);
+    ctx.fillStyle = g;
+    ctx.fill();
+  });
+
+  // ── 2. Moon surface
+  const surf = ctx.createRadialGradient(cx - r*0.16, cy - r*0.20, r*0.04, cx + r*0.05, cy + r*0.05, r);
+  surf.addColorStop(0,    '#eff4ff');
+  surf.addColorStop(0.12, '#e6eefb');
+  surf.addColorStop(0.30, '#d8e6f6');
+  surf.addColorStop(0.52, '#c6d8f0');
+  surf.addColorStop(0.72, '#b0c8e8');
+  surf.addColorStop(0.88, '#98b4d8');
+  surf.addColorStop(1,    '#80a0c8');
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fillStyle = surf;
+  ctx.fill();
+
+  // ── 3. Mare blotches
+  [
+    { dx:-0.07, dy:-0.17, rx:0.28, ry:0.20, rot:-0.30, a:0.13 },
+    { dx: 0.17, dy: 0.06, rx:0.20, ry:0.14, rot: 0.40, a:0.11 },
+    { dx:-0.20, dy: 0.22, rx:0.18, ry:0.12, rot:-0.20, a:0.09 },
+    { dx: 0.06, dy: 0.28, rx:0.14, ry:0.10, rot: 0.55, a:0.08 },
+    { dx: 0.23, dy:-0.20, rx:0.11, ry:0.08, rot:-0.10, a:0.07 },
+    { dx:-0.30, dy:-0.05, rx:0.10, ry:0.07, rot: 0.20, a:0.06 },
+  ].forEach(function(m) {
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.clip();
+    ctx.translate(cx + m.dx*r, cy + m.dy*r);
+    ctx.rotate(m.rot);
+    var mg = ctx.createRadialGradient(0,0,0, 0,0, Math.max(m.rx,m.ry)*r);
+    mg.addColorStop(0,    'rgba(75,95,140,'  + m.a + ')');
+    mg.addColorStop(0.55, 'rgba(85,108,152,' + (m.a*0.45) + ')');
+    mg.addColorStop(1,    'rgba(100,120,165,0)');
+    ctx.scale(m.rx*r, m.ry*r);
+    ctx.beginPath(); ctx.arc(0,0,1,0,Math.PI*2);
+    ctx.fillStyle = mg; ctx.fill();
+    ctx.restore();
+  });
+
+  // ── 4. Craters
+  [
+    { dx: 0.20, dy:-0.22, cr:0.072, d:0.36 },
+    { dx:-0.28, dy: 0.08, cr:0.052, d:0.30 },
+    { dx: 0.06, dy: 0.32, cr:0.042, d:0.26 },
+    { dx: 0.32, dy: 0.18, cr:0.030, d:0.23 },
+    { dx:-0.12, dy:-0.32, cr:0.026, d:0.20 },
+    { dx: 0.24, dy:-0.04, cr:0.022, d:0.18 },
+    { dx:-0.32, dy:-0.16, cr:0.019, d:0.16 },
+    { dx: 0.10, dy: 0.14, cr:0.016, d:0.13 },
+    { dx:-0.05, dy:-0.10, cr:0.013, d:0.11 },
+  ].forEach(function(c) {
+    var ccx = cx + c.dx*r, ccy = cy + c.dy*r, cr = c.cr*r;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.clip();
+    var sg = ctx.createRadialGradient(ccx+cr*0.18, ccy+cr*0.18, 0, ccx, ccy, cr);
+    sg.addColorStop(0,    'rgba(65,85,130,'  + c.d + ')');
+    sg.addColorStop(0.65, 'rgba(75,95,142,'  + (c.d*0.38) + ')');
+    sg.addColorStop(1,    'rgba(95,115,160,0)');
+    ctx.beginPath(); ctx.arc(ccx, ccy, cr, 0, Math.PI*2);
+    ctx.fillStyle = sg; ctx.fill();
+    var hg = ctx.createRadialGradient(ccx-cr*0.3, ccy-cr*0.3, 0, ccx, ccy, cr);
+    hg.addColorStop(0,    'rgba(235,245,255,' + (c.d*0.28) + ')');
+    hg.addColorStop(0.35, 'rgba(235,245,255,0)');
+    ctx.beginPath(); ctx.arc(ccx-cr*0.22, ccy-cr*0.22, cr*0.52, 0, Math.PI*2);
+    ctx.fillStyle = hg; ctx.fill();
+    ctx.restore();
+  });
+
+  // ── 5. Phase shadow with soft terminator
+  var ill    = phase.illumination;
+  var waning = !phase.waxing;
+
+  if (ill <= 0.005) {
+    ctx.save();
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(4,8,26,0.96)'; ctx.fill();
+    ctx.restore();
+  } else if (ill < 0.995) {
+    var litFrac  = ill;
+    var txWaning = cx + (2*litFrac - 1) * r;
+    var txWaxing = cx - (2*litFrac - 1) * r;
+    var tx = waning ? txWaning : txWaxing;
+    var termR = Math.abs(2*litFrac - 1) * r;
+
+    var off = document.createElement('canvas');
+    off.width = physSize; off.height = physSize;
+    var oc = off.getContext('2d');
+    oc.scale(dpr, dpr);
+
+    // Slightly enlarge the clip to avoid a 1-pixel seam when resampling
+    oc.beginPath(); oc.arc(cx, cy, r + 1, 0, Math.PI*2); oc.clip();
+
+    oc.save();
+    if (waning) {
+      oc.beginPath();
+      oc.moveTo(cx, cy - r);
+      oc.arc(cx, cy, r, -Math.PI/2, Math.PI/2, false);
+      if (termR < 0.5) {
+        oc.lineTo(cx, cy - r);
+      } else {
+        oc.ellipse(tx, cy, termR, r, 0, Math.PI/2, -Math.PI/2, litFrac > 0.5);
+      }
+      oc.closePath();
+    } else {
+      oc.beginPath();
+      oc.moveTo(cx, cy - r);
+      oc.arc(cx, cy, r, -Math.PI/2, Math.PI/2, true);
+      if (termR < 0.5) {
+        oc.lineTo(cx, cy - r);
+      } else {
+        oc.ellipse(tx, cy, termR, r, 0, Math.PI/2, -Math.PI/2, litFrac < 0.5);
+      }
+      oc.closePath();
+    }
+    oc.fillStyle = 'rgba(4,8,26,0.95)';
+    oc.fill();
+    oc.restore();
+
+    // Soft terminator blur band
+    var bw = r * 0.055;
+    var tg = oc.createLinearGradient(tx - bw*2, 0, tx + bw*2, 0);
+    tg.addColorStop(0,    'rgba(4,8,26,0.0)');
+    tg.addColorStop(0.35, 'rgba(4,8,26,0.42)');
+    tg.addColorStop(0.5,  'rgba(4,8,26,0.68)');
+    tg.addColorStop(0.65, 'rgba(4,8,26,0.42)');
+    tg.addColorStop(1,    'rgba(4,8,26,0.0)');
+    oc.save();
+    oc.beginPath(); oc.arc(cx, cy, r, 0, Math.PI*2); oc.clip();
+    oc.fillStyle = tg;
+    oc.fillRect(tx - bw*3, cy - r - 2, bw*6, r*2 + 4);
+    oc.restore();
+
+    // Penumbra shimmer
+    var pg = oc.createLinearGradient(tx - bw*1.5, 0, tx + bw*1.5, 0);
+    pg.addColorStop(0,   'rgba(170,205,255,0)');
+    pg.addColorStop(0.5, 'rgba(170,205,255,0.09)');
+    pg.addColorStop(1,   'rgba(170,205,255,0)');
+    oc.save();
+    oc.beginPath(); oc.arc(cx, cy, r, 0, Math.PI*2); oc.clip();
+    oc.fillStyle = pg;
+    oc.fillRect(tx - bw*1.5, cy - r - 2, bw*3, r*2 + 4);
+    oc.restore();
+
+    // Draw the offscreen canvas with a 1px horizontal overlap to prevent seam artifacts
+    ctx.drawImage(off, 0, 0, physSize, physSize, -1, 0, S + 2, S);
+  }
+
+  // ── 6. Limb darkening
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.clip();
+  var ld = ctx.createRadialGradient(cx, cy, r*0.52, cx, cy, r);
+  ld.addColorStop(0,    'rgba(0,0,0,0)');
+  ld.addColorStop(0.72, 'rgba(0,0,0,0.03)');
+  ld.addColorStop(0.88, 'rgba(0,0,0,0.13)');
+  ld.addColorStop(1,    'rgba(0,0,0,0.26)');
+  ctx.fillStyle = ld;
+  ctx.fillRect(cx-r, cy-r, r*2, r*2);
+  ctx.restore();
+
+  // ── 7. Specular highlight
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.clip();
+  var sp = ctx.createRadialGradient(cx-r*0.36, cy-r*0.36, 0, cx-r*0.14, cy-r*0.14, r*0.62);
+  sp.addColorStop(0,    'rgba(255,255,255,0.13)');
+  sp.addColorStop(0.38, 'rgba(255,255,255,0.04)');
+  sp.addColorStop(1,    'rgba(255,255,255,0)');
+  ctx.fillStyle = sp;
+  ctx.fillRect(cx-r, cy-r, r*2, r*2);
+  ctx.restore();
+
+  ctx.restore(); // undo dpr scale
+}
+
+// ════════════════════════════════════════════════
+//  MOON CANVAS RESPONSIVE RESIZE
+// ════════════════════════════════════════════════
+function resizeMoon() {
+  var canvas = document.getElementById('moon-canvas');
+  var logicalSize = window.innerWidth < 600 ? 220 : 300;
+  canvas.setAttribute('data-size', logicalSize);
+  var dpr = Math.min(window.devicePixelRatio || 1, 3);
+  canvas.width  = logicalSize * dpr;
+  canvas.height = logicalSize * dpr;
+  canvas.style.width  = logicalSize + 'px';
+  canvas.style.height = logicalSize + 'px';
+  var phase = getLunarPhase(new Date());
+  drawMoon(canvas, phase);
+}
+
+// ════════════════════════════════════════════════
+//  STARS
+// ════════════════════════════════════════════════
+function initStars() {
+  const canvas = document.getElementById('stars-canvas');
+  const ctx = canvas.getContext('2d');
+  let stars = [];
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    buildStars();
+    drawStars();
+  }
+
+  function buildStars() {
+    stars = [];
+    const count = Math.floor((canvas.width * canvas.height) / 3800);
+    for (let i = 0; i < count; i++) {
+      stars.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 1.4 + 0.2,
+        a: Math.random() * 0.7 + 0.2,
+        speed: Math.random() * 0.012 + 0.004,
+        phase: Math.random() * Math.PI * 2,
+      });
+    }
+  }
+
+  let frame = 0;
+  function drawStars() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    frame += 0.015;
+    stars.forEach(s => {
+      const tw = s.a * (0.6 + 0.4 * Math.sin(frame * s.speed * 80 + s.phase));
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(200,215,255,${tw})`;
+      ctx.fill();
+    });
+    requestAnimationFrame(drawStars);
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+}
+
+// ════════════════════════════════════════════════
+//  PETAL SYSTEM
+// ════════════════════════════════════════════════
+function initPetals() {
+  const container = document.getElementById('petals');
+  const petalColors = ['#c0415a','#8B1A2F','#d4607a','#f4c2c2','#b03050','#e8909a'];
+  const count = 28;
+
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'petal';
+    const size = 8 + Math.random() * 16;
+    const color = petalColors[Math.floor(Math.random() * petalColors.length)];
+    const dur = 6 + Math.random() * 9;
+    const delay = Math.random() * 12;
+    const left = Math.random() * 105;
+    const skew = Math.random() * 0.6 + 0.3;
+    p.style.cssText = `
+      left: ${left}%;
+      width: ${size * skew}px;
+      height: ${size}px;
+      background: ${color};
+      opacity: 0;
+      animation-name: petalFall;
+      animation-duration: ${dur}s;
+      animation-delay: ${delay}s;
+      animation-iteration-count: infinite;
+      filter: blur(${Math.random() * 0.6}px);
+    `;
+    container.appendChild(p);
+  }
+}
+
+// ════════════════════════════════════════════════
+//  SCROLL MAGIC
+// ════════════════════════════════════════════════
+function initScroll() {
+  const moonWrap    = document.getElementById('moon-wrap');
+  const phaseLabel  = document.getElementById('phase-label');
+  const bgNight     = document.getElementById('bg-night');
+  const bgRose      = document.getElementById('bg-rose');
+  const starsCanvas = document.getElementById('stars-canvas');
+  const petals      = document.getElementById('petals');
+  const scrollHint  = document.getElementById('scroll-hint');
+  const allRoses    = document.querySelectorAll('.rose-deco');
+
+  const totalScroll = () => document.documentElement.scrollHeight - window.innerHeight;
+  let ticking = false;
+
+  function onScroll() {
+    if (!ticking) { requestAnimationFrame(update); ticking = true; }
+  }
+
+  function update() {
+    ticking = false;
+    const scrollY = window.scrollY;
+    const total   = totalScroll();
+    const prog    = Math.min(scrollY / total, 1);
+
+    scrollHint.style.opacity = scrollY > 60 ? '0' : '1';
+
+    const t = Math.max(0, Math.min(1, (prog - 0.25) / 0.4));
+    const moonOpacity = 1 - easeInOut(t);
+    const moonScale   = 1 - easeInOut(t) * 0.35;
+    moonWrap.style.opacity   = moonOpacity;
+    moonWrap.style.transform = `translate(-50%, -54%) scale(${moonScale})`;
+    phaseLabel.style.opacity = moonOpacity * 0.8;
+
+    bgNight.style.opacity = 1 - easeInOut(t) * 0.85;
+    bgRose.style.opacity  = easeInOut(t);
+
+    starsCanvas.style.opacity = 1 - easeInOut(Math.max(0, Math.min(1, (prog - 0.3) / 0.3)));
+
+    const petalProg = Math.max(0, Math.min(1, (prog - 0.3) / 0.25));
+    petals.style.opacity = easeInOut(petalProg);
+
+    if (prog > 0.65) {
+      allRoses.forEach(r => r.classList.add('visible'));
+    } else {
+      allRoses.forEach(r => r.classList.remove('visible'));
+    }
+  }
+
+  function easeInOut(t) {
+    return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  update();
+}
+
+// ════════════════════════════════════════════════
+//  INTERSECTION OBSERVER — poem reveals
+// ════════════════════════════════════════════════
+function initReveal() {
+  const items = document.querySelectorAll('.poem-block, .dedication-card');
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.18 });
+  items.forEach(el => obs.observe(el));
+}
+
+// ════════════════════════════════════════════════
+//  CUSTOM CURSOR
+// ════════════════════════════════════════════════
+function initCursor() {
+  const cursor = document.getElementById('cursor');
+  let mx = -100, my = -100, cx = -100, cy = -100;
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  document.addEventListener('mouseleave', () => { cursor.style.opacity = '0'; });
+  document.addEventListener('mouseenter', () => { cursor.style.opacity = '1'; });
+  function loop() {
+    cx += (mx - cx) * 0.18;
+    cy += (my - cy) * 0.18;
+    cursor.style.left = cx + 'px';
+    cursor.style.top  = cy + 'px';
+    requestAnimationFrame(loop);
+  }
+  loop();
+}
+
+// ════════════════════════════════════════════════
+//  BACKGROUND AUDIO (autoplay-friendly fallback)
+//  Strategy: try to play muted -> if allowed, unmute and fade in.
+//  If blocked, show a full-screen overlay that asks for a tap/click.
+// ════════════════════════════════════════════════
+function initBackgroundAudio() {
+  const audio = document.getElementById('bg-audio');
+  if (!audio) return;
+  const TARGET_VOLUME = 0.85;
+
+  function fadeInVolume() {
+    audio.muted = false;
+    audio.volume = 0;
+    let v = 0;
+    const fade = setInterval(() => {
+      v = Math.min(v + 0.03, TARGET_VOLUME);
+      audio.volume = v;
+      if (v >= TARGET_VOLUME) clearInterval(fade);
+    }, 80);
+  }
+
+  // Create unobtrusive overlay shown only when autoplay is blocked
+  function makeOverlay() {
+    const o = document.createElement('div');
+    o.id = 'audio-activation-overlay';
+    o.innerHTML = '<div style="padding:20px 28px;border-radius:12px;background:rgba(4,8,26,0.88);color:#f4c2c2;font-family:inherit;font-size:1rem;">Toca en cualquier parte para activar el sonido</div>';
+    Object.assign(o.style, {
+      position: 'fixed', inset: '0', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 100000, cursor: 'pointer', background: 'linear-gradient(rgba(4,8,26,0.0), rgba(4,8,26,0.35))'
+    });
+    return o;
+  }
+
+  // Try to play muted first (some browsers allow muted autoplay)
+  audio.muted = true;
+  audio.volume = 0;
+  audio.play().then(() => {
+    // autoplay (muted) succeeded — attempt to unmute and fade in
+    try { audio.muted = false; } catch (e) {}
+    fadeInVolume();
+  }).catch(() => {
+    // blocked: do NOT show any overlay. Resume on first user interaction silently.
+    function resume() {
+      try { audio.muted = false; } catch (e) {}
+      audio.play().then(() => {
+        fadeInVolume();
+      }).catch(() => {
+        // still blocked — nothing else to show
+      });
+    }
+    document.addEventListener('click', resume, { once: true });
+    document.addEventListener('touchstart', resume, { once: true });
+  });
+}
+
+// ════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  // Lunar phase
+  const phase = getLunarPhase(new Date());
+  document.getElementById('phase-label').textContent = phase.phaseName;
+
+  // Draw moon
+  const moonCanvas = document.getElementById('moon-canvas');
+  resizeMoon();
+  window.addEventListener('resize', resizeMoon);
+
+  // Systems
+  initStars();
+  initPetals();
+  initScroll();
+  initReveal();
+  initCursor();
+  initBackgroundAudio();
+});
+</script>
+</body>
+</html>
